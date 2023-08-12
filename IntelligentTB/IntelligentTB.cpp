@@ -1,0 +1,119 @@
+#include "IntelligentTB.h"
+
+static TCHAR szWindowClass[] = _T("IntelligentTB");
+static TCHAR szTitle[] = _T("IntelligentTB");
+
+// Global variables
+NOTIFYICONDATA g_nid;
+
+int WINAPI WinMain(
+    _In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPSTR     lpCmdLine,
+    _In_ int       nCmdShow
+) {
+    // Initialize variables
+    MSG msg;
+    WNDCLASSEX wcex = {
+        sizeof(WNDCLASSEX), 
+        CS_CLASSDC,
+        WndProc, 0L, 0L,
+        GetModuleHandle(NULL),
+        NULL, NULL, NULL, NULL, 
+        szWindowClass, NULL 
+    };
+
+    // Register window class
+    if (!RegisterClassEx(&wcex))
+    {
+        MessageBox(NULL,
+            _T("Call to RegisterClassEx failed!"),
+            _T("Error"),
+            MB_ICONERROR);
+
+        return 1;
+    }
+
+    // Create a hidden window
+    HWND hWnd = CreateWindow(
+        wcex.lpszClassName, szTitle, 
+        WS_OVERLAPPEDWINDOW, 
+        0, 0, 0, 0, NULL, NULL, 
+        wcex.hInstance, NULL
+    );
+
+    if (!hWnd)
+    {
+        MessageBox(NULL,
+            _T("Call to CreateWindowEx failed!"),
+            _T("Error"),
+            MB_ICONERROR);
+
+        return 1;
+    }
+
+    // Initialize NOTIFYICONDATA structure
+    g_nid.cbSize = sizeof(NOTIFYICONDATA);
+    g_nid.hWnd = hWnd;
+    g_nid.uID = 1;
+    g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    g_nid.uCallbackMessage = WM_USER + 1;
+    g_nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    _tcscpy_s(g_nid.szTip, szTitle);
+
+    // Add the tray icon
+    Shell_NotifyIcon(NIM_ADD, &g_nid);
+
+    // Main message loop
+    while (GetMessage(&msg, NULL, 0, 0) > 0) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    // Clean up and remove the tray icon
+    Shell_NotifyIcon(NIM_DELETE, &g_nid);
+    UnregisterClass(wcex.lpszClassName, wcex.hInstance);
+
+    return static_cast<int>(msg.wParam);
+}
+
+LRESULT CALLBACK WndProc(
+    _In_ HWND   hWnd,
+    _In_ UINT   message,
+    _In_ WPARAM wParam,
+    _In_ LPARAM lParam
+) {
+    switch (message) {
+    case WM_USER + 1: // Tray icon message
+        switch (LOWORD(lParam)) {
+        case WM_RBUTTONUP: // Right-click context menu
+            POINT pt;
+            GetCursorPos(&pt);
+
+            HMENU hMenu = CreatePopupMenu();
+            AppendMenu(hMenu, MF_STRING, 1, _T("Exit"));
+            SetForegroundWindow(hWnd);
+
+            UINT cmd = TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hWnd, NULL);
+            if (cmd == 1) {
+                PostMessage(hWnd, WM_CLOSE, 0, 0);
+            }
+
+            DestroyMenu(hMenu);
+            break;
+        }
+        break;
+
+    case WM_CLOSE:
+        DestroyWindow(hWnd);
+        break;
+
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
