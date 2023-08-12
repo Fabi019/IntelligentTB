@@ -1,13 +1,15 @@
 #include "IntelligentTB.h"
+#include "TaskbarManager.h"
 
 static TCHAR szWindowClass[] = _T("IntelligentTB");
 static TCHAR szTitle[] = _T("IntelligentTB");
+static TCHAR settingsFile[MAX_PATH];
 
 // Global variables
 NOTIFYICONDATA g_nid;
-HANDLE g_hMutex;
-
-TCHAR settingsFile[MAX_PATH];
+HANDLE g_hMutex = NULL;
+UINT_PTR g_timerID = 0;
+TaskbarManager g_tbm;
 
 int WINAPI WinMain(
     _In_ HINSTANCE hInstance,
@@ -23,7 +25,7 @@ int WINAPI WinMain(
             _T("Mutex creation failed!"), 
             szTitle,
             MB_ICONERROR);
-        return 1; // Exit the application
+        return 1;
     }
 
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
@@ -40,6 +42,9 @@ int WINAPI WinMain(
 
     // Load settings
     LoadSettings();
+    
+    // Setup taskbar manager
+    g_tbm = TaskbarManager();
 
     // Initialize variables
     MSG msg;
@@ -53,8 +58,7 @@ int WINAPI WinMain(
     };
 
     // Register window class
-    if (!RegisterClassEx(&wcex))
-    {
+    if (!RegisterClassEx(&wcex)) {
         MessageBox(NULL,
             _T("Call to RegisterClassEx failed!"),
             szTitle,
@@ -71,8 +75,7 @@ int WINAPI WinMain(
         wcex.hInstance, NULL
     );
 
-    if (!hWnd)
-    {
+    if (!hWnd) {
         MessageBox(NULL,
             _T("Call to CreateWindowEx failed!"),
             szTitle,
@@ -80,6 +83,9 @@ int WINAPI WinMain(
 
         return 1;
     }
+
+    // Set a timer that fires every 200ms
+    g_timerID = SetTimer(hWnd, 1, 200, TimerCallback);
 
     // Initialize NOTIFYICONDATA structure
     g_nid.cbSize = sizeof(NOTIFYICONDATA);
@@ -158,15 +164,15 @@ LRESULT CALLBACK WndProc(
     return 0;
 }
 
+VOID CALLBACK TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
+    g_tbm.UpdateTaskbar();
+}
+
 VOID LoadSettings() {
     TCHAR szValue[MAX_PATH];
     GetPrivateProfileString(_T("Settings"), _T("Option1"), _T(""), szValue, MAX_PATH, settingsFile);
-    OutputDebugString(_T("Option1: "));
-    OutputDebugString(szValue);
-    OutputDebugString(_T("\n"));
+    _tprintf(_T("Option1: %s\n"), szValue);
 
     GetPrivateProfileString(_T("Settings"), _T("Option2"), _T(""), szValue, MAX_PATH, settingsFile);
-    OutputDebugString(_T("Option2: "));
-    OutputDebugString(szValue);
-    OutputDebugString(_T("\n"));
+    _tprintf(_T("Option1: %s\n"), szValue);
 }

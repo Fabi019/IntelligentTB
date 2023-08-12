@@ -18,9 +18,15 @@
     <ClCompile Include="IntelligentTB.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="TaskbarManager.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IntelligentTB.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="TaskbarManager.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

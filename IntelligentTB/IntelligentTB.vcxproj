@@ -128,9 +128,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="IntelligentTB.cpp" />
+    <ClCompile Include="TaskbarManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IntelligentTB.h" />
+    <ClInclude Include="TaskbarManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
