@@ -13,3 +13,4 @@
 #include <tchar.h>
 
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+VOID				LoadSettings();

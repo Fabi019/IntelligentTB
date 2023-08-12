@@ -5,6 +5,7 @@ static TCHAR szTitle[] = _T("IntelligentTB");
 
 // Global variables
 NOTIFYICONDATA g_nid;
+TCHAR settingsFile[MAX_PATH];
 
 int WINAPI WinMain(
     _In_ HINSTANCE hInstance,
@@ -12,15 +13,21 @@ int WINAPI WinMain(
     _In_ LPSTR     lpCmdLine,
     _In_ int       nCmdShow
 ) {
+    GetModuleFileName(NULL, settingsFile, MAX_PATH);
+    _tcscpy_s(_tcsrchr(settingsFile, _T('\\')) + 1, MAX_PATH - _tcslen(settingsFile), _T("settings.ini"));
+
+    // Load settings
+    LoadSettings();
+
     // Initialize variables
     MSG msg;
     WNDCLASSEX wcex = {
-        sizeof(WNDCLASSEX), 
+        sizeof(WNDCLASSEX),
         CS_CLASSDC,
         WndProc, 0L, 0L,
         GetModuleHandle(NULL),
-        NULL, NULL, NULL, NULL, 
-        szWindowClass, NULL 
+        NULL, NULL, NULL, NULL,
+        szWindowClass, NULL
     };
 
     // Register window class
@@ -36,9 +43,9 @@ int WINAPI WinMain(
 
     // Create a hidden window
     HWND hWnd = CreateWindow(
-        wcex.lpszClassName, szTitle, 
-        WS_OVERLAPPEDWINDOW, 
-        0, 0, 0, 0, NULL, NULL, 
+        wcex.lpszClassName, szTitle,
+        WS_OVERLAPPEDWINDOW,
+        0, 0, 0, 0, NULL, NULL,
         wcex.hInstance, NULL
     );
 
@@ -91,12 +98,19 @@ LRESULT CALLBACK WndProc(
             GetCursorPos(&pt);
 
             HMENU hMenu = CreatePopupMenu();
-            AppendMenu(hMenu, MF_STRING, 1, _T("Exit"));
+            AppendMenu(hMenu, MF_STRING, 1, _T("Settings"));
+            AppendMenu(hMenu, MF_STRING, 2, _T("Exit"));
             SetForegroundWindow(hWnd);
 
             UINT cmd = TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hWnd, NULL);
-            if (cmd == 1) {
+            switch (cmd) {
+            case 1: // Settings
+                ShellExecute(NULL, _T("open"), settingsFile, NULL, NULL, SW_SHOWNORMAL);
+                break;
+
+            case 2: // Exit
                 PostMessage(hWnd, WM_CLOSE, 0, 0);
+                break;
             }
 
             DestroyMenu(hMenu);
@@ -116,4 +130,17 @@ LRESULT CALLBACK WndProc(
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+VOID LoadSettings() {
+    TCHAR szValue[MAX_PATH];
+    GetPrivateProfileString(_T("Settings"), _T("Option1"), _T(""), szValue, MAX_PATH, settingsFile);
+    OutputDebugString(_T("Option1: "));
+    OutputDebugString(szValue);
+    OutputDebugString(_T("\n"));
+
+    GetPrivateProfileString(_T("Settings"), _T("Option2"), _T(""), szValue, MAX_PATH, settingsFile);
+    OutputDebugString(_T("Option2: "));
+    OutputDebugString(szValue);
+    OutputDebugString(_T("\n"));
 }
