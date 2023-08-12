@@ -5,6 +5,8 @@ static TCHAR szTitle[] = _T("IntelligentTB");
 
 // Global variables
 NOTIFYICONDATA g_nid;
+HANDLE g_hMutex;
+
 TCHAR settingsFile[MAX_PATH];
 
 int WINAPI WinMain(
@@ -13,6 +15,26 @@ int WINAPI WinMain(
     _In_ LPSTR     lpCmdLine,
     _In_ int       nCmdShow
 ) {
+    // Check if another instance is already running
+    g_hMutex = CreateMutex(NULL, TRUE, szWindowClass);
+
+    if (g_hMutex == NULL) {
+        MessageBox(NULL, 
+            _T("Mutex creation failed!"), 
+            szTitle,
+            MB_ICONERROR);
+        return 1; // Exit the application
+    }
+
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        MessageBox(NULL,
+            _T("Another instance of the application is already running."),
+            szTitle,
+            MB_ICONINFORMATION);
+        CloseHandle(g_hMutex);
+        return 0; // Exit the second instance
+    }
+
     GetModuleFileName(NULL, settingsFile, MAX_PATH);
     _tcscpy_s(_tcsrchr(settingsFile, _T('\\')) + 1, MAX_PATH - _tcslen(settingsFile), _T("settings.ini"));
 
@@ -35,7 +57,7 @@ int WINAPI WinMain(
     {
         MessageBox(NULL,
             _T("Call to RegisterClassEx failed!"),
-            _T("Error"),
+            szTitle,
             MB_ICONERROR);
 
         return 1;
@@ -53,7 +75,7 @@ int WINAPI WinMain(
     {
         MessageBox(NULL,
             _T("Call to CreateWindowEx failed!"),
-            _T("Error"),
+            szTitle,
             MB_ICONERROR);
 
         return 1;
@@ -80,6 +102,10 @@ int WINAPI WinMain(
     // Clean up and remove the tray icon
     Shell_NotifyIcon(NIM_DELETE, &g_nid);
     UnregisterClass(wcex.lpszClassName, wcex.hInstance);
+
+    // Release the mutex before exiting
+    ReleaseMutex(g_hMutex);
+    CloseHandle(g_hMutex);
 
     return static_cast<int>(msg.wParam);
 }
