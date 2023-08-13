@@ -2,10 +2,11 @@
 
 #include <Windows.h>
 #include <tchar.h>
+#include <vector>
 
 class TaskbarManager {
 public:
-    TaskbarManager();
+    TaskbarManager(TCHAR*, TCHAR*);
 
     void UpdateTaskbar();
 
@@ -19,5 +20,8 @@ private:
     HWND trayWindow = NULL;
     HMONITOR monitor = NULL;
     RECT tbRect;
+
+    std::vector<TCHAR*> blacklist;
+    std::vector<TCHAR*> whitelist;
 };
 

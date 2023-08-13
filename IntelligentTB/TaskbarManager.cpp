@@ -1,14 +1,41 @@
 #include "TaskbarManager.h"
 
-TaskbarManager::TaskbarManager() {
-	trayWindow = FindWindow(L"Shell_TrayWnd", nullptr);
+TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
+	// Initialize tray handle and current monitor
+	trayWindow = FindWindow(_T("Shell_TrayWnd"), nullptr);
 	monitor = MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+
+	TCHAR* token;
+	TCHAR* context;
+
+	// Parse the blacklist
+	token = _tcstok_s(bl, _T(","), &context);
+	while (token != NULL) {
+		OutputDebugString(token);
+		OutputDebugString(_T("\n"));
+
+		blacklist.push_back(token);
+		token = _tcstok_s(NULL, _T(","), &context);
+	}
+
+	// Parse the whitelist
+	token = _tcstok_s(wl, _T(","), &context);
+	while (token != NULL) {
+		OutputDebugString(token);
+		OutputDebugString(_T("\n"));
+
+		whitelist.push_back(token);
+		token = _tcstok_s(NULL, _T(","), &context);
+	}
 
 	// Initially show taskbar
 	ShowTaskbar(trayWindow, monitor);
 
+	// Small delay to wait for the taskbar to fully show
+	Sleep(1);
+
 	if (!GetWindowRect(trayWindow, &tbRect)) {
-		OutputDebugString(L"Unable to get task bar window rect!\n");
+		OutputDebugString(_T("Unable to get task bar window rect!\n"));
 		return;
 	}
 }
@@ -17,61 +44,67 @@ bool TaskbarManager::ShouldHideTaskbar() {
 	HWND foregroundWnd = GetForegroundWindow();
 
 	if (foregroundWnd == nullptr) {
-		OutputDebugString(L"No foreground window!\n");
+		OutputDebugString(_T("No foreground window!\n"));
 		return false;
 	}
 
 	if (!IsWindowVisible(foregroundWnd)) {
-		OutputDebugString(L"Foreground window not visible!\n");
+		OutputDebugString(_T("Foreground window not visible!\n"));
 		return false;
 	}
 
 	RECT fgRect;
 	if (!GetWindowRect(foregroundWnd, &fgRect)) {
-		OutputDebugString(L"Unable to get foreground window rect!\n");
+		OutputDebugString(_T("Unable to get foreground window rect!\n"));
 		return false;
 	}
 
 	TCHAR title[256];
 	int len = GetClassName(foregroundWnd, title, 256);
 
-	if (len == 0
-		|| _tcscmp(title, _T("Progman")) == 0
-		|| _tcscmp(title, _T("XamlExplorerHostIslandWindow")) == 0
-		|| _tcscmp(title, _T("Shell_TrayWnd")) == 0
-		|| _tcscmp(title, _T("TopLevelWindowForOverflowXamlIsland")) == 0
-		|| _tcscmp(title, _T("Windows.UI.Core.CoreWindow")) == 0
-		|| _tcscmp(title, _T("WindowsDashboard")) == 0) {
-		_tprintf(L"Foreground is desktop!\n");
-		return false;
+	OutputDebugString(_T("Foreground: "));
+	OutputDebugString(title);
+	OutputDebugString(_T("\n"));
+
+	for (auto bl : blacklist) {
+		if (_tcscmp(title, bl) == 0) {
+			OutputDebugString(_T("Foreground is desktop!\n"));
+			return false;
+		}
 	}
 
 	POINT curPos;
 	if (!GetCursorPos(&curPos)) {
-		OutputDebugString(L"Unable to get cursor position!\n");
+		OutputDebugString(_T("Unable to get cursor position!\n"));
 		return false;
 	}
 
 	HWND cursorWnd = WindowFromPoint(curPos);
 
 	if (cursorWnd == nullptr) {
-		OutputDebugString(L"No window under cursor window!\n");
+		OutputDebugString(_T("No window under cursor window!\n"));
 		return false;
 	}
 
 	len = GetClassName(cursorWnd, title, 256);
 
-	if (_tcscmp(title, _T("Shell_TrayWnd")) == 0
-		|| _tcscmp(title, _T("MSTaskSwWClass")) == 0
-		|| _tcscmp(title, _T("TrayNotifyWnd")) == 0) {
-		OutputDebugString(L"Mouse hoverig taskbar!\n");
-		return false;
+	OutputDebugString(_T("Hovering: "));
+	OutputDebugString(title);
+	OutputDebugString(_T("\n"));
+
+	for (auto wl : whitelist) {
+		if (_tcscmp(title, wl) == 0) {
+			OutputDebugString(_T("Mouse hoverig taskbar!\n"));
+			return false;
+		}
 	}
 
-	OutputDebugString(title);
-	OutputDebugString(L"\n");
+	bool intersect = fgRect.left < tbRect.right
+		&& fgRect.right > tbRect.left
+		&& fgRect.top < tbRect.bottom
+		&& fgRect.bottom > tbRect.top;
 
-	return fgRect.left < tbRect.right && fgRect.right > tbRect.left && fgRect.top < tbRect.bottom && fgRect.bottom > tbRect.top;
+	return intersect;
 }
 
 void TaskbarManager::ShowTaskbar(HWND trayWindow, HMONITOR monitor) {
@@ -87,11 +120,11 @@ void TaskbarManager::UpdateTaskbar() {
 	bool shouldHide = ShouldHideTaskbar();
 
 	if (visible && shouldHide) {
-		OutputDebugString(L"Hiding taskbar\n");
+		OutputDebugString(_T("Hiding taskbar\n"));
 		HideTaskbar(trayWindow);
 	}
 	else if (!visible && !shouldHide) {
-		OutputDebugString(L"Showing taskbar\n");
+		OutputDebugString(_T("Showing taskbar\n"));
 		ShowTaskbar(trayWindow, monitor);
 	}
 }
@@ -99,7 +132,7 @@ void TaskbarManager::UpdateTaskbar() {
 bool TaskbarManager::IsTaskbarVisible(HWND trayWindow) {
 	RECT rect;
 	if (!GetWindowRect(trayWindow, &rect)) {
-		OutputDebugString(L"Unable to get task bar window rect!\n");
+		OutputDebugString(_T("Unable to get task bar window rect!\n"));
 		return false;
 	}
 

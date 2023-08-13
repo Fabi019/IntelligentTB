@@ -1,15 +1,27 @@
 #include "IntelligentTB.h"
 #include "TaskbarManager.h"
 
+const TCHAR SETTINGS_FILE[] = _T("settings.ini");
+const TCHAR SETTINGS_CATEGORY[] = _T("Settings");
+const TCHAR DEFAULT_TIMERMS[] = _T("200");
+const TCHAR DEFAULT_BLACKLIST[] = _T("Progman,XamlExplorerHostIslandWindow,Shell_TrayWnd,TopLevelWindowForOverflowXamlIsland,Windows.UI.Core.CoreWindow,WindowsDashboard,WorkerW");
+const TCHAR DEFAULT_WHITELIST[] = _T("Shell_TrayWnd,MSTaskSwWClass,TrayNotifyWnd");
+
 static TCHAR szWindowClass[] = _T("IntelligentTB");
 static TCHAR szTitle[] = _T("IntelligentTB");
 static TCHAR settingsFile[MAX_PATH];
+
+// Settings
+static INT timerMs = 200;
+static TCHAR blacklist[512];
+static TCHAR whitelist[512];
 
 // Global variables
 NOTIFYICONDATA g_nid;
 HANDLE g_hMutex = NULL;
 UINT_PTR g_timerID = 0;
-TaskbarManager g_tbm;
+TaskbarManager* g_tbm;
+BOOL g_disabled = false;
 
 int WINAPI WinMain(
     _In_ HINSTANCE hInstance,
@@ -38,13 +50,10 @@ int WINAPI WinMain(
     }
 
     GetModuleFileName(NULL, settingsFile, MAX_PATH);
-    _tcscpy_s(_tcsrchr(settingsFile, _T('\\')) + 1, MAX_PATH - _tcslen(settingsFile), _T("settings.ini"));
+    _tcscpy_s(_tcsrchr(settingsFile, _T('\\')) + 1, MAX_PATH - _tcslen(settingsFile), SETTINGS_FILE);
 
     // Load settings
     LoadSettings();
-    
-    // Setup taskbar manager
-    g_tbm = TaskbarManager();
 
     // Initialize variables
     MSG msg;
@@ -84,8 +93,12 @@ int WINAPI WinMain(
         return 1;
     }
 
+    // Setup taskbar manager
+    auto tbm = TaskbarManager(blacklist, whitelist);
+    g_tbm = &tbm;
+
     // Set a timer that fires every 200ms
-    g_timerID = SetTimer(hWnd, 1, 200, TimerCallback);
+    g_timerID = SetTimer(hWnd, 1, timerMs, TimerCallback);
 
     // Initialize NOTIFYICONDATA structure
     g_nid.cbSize = sizeof(NOTIFYICONDATA);
@@ -130,18 +143,32 @@ LRESULT CALLBACK WndProc(
             GetCursorPos(&pt);
 
             HMENU hMenu = CreatePopupMenu();
-            AppendMenu(hMenu, MF_STRING, 1, _T("Settings"));
-            AppendMenu(hMenu, MF_STRING, 2, _T("Exit"));
-            SetForegroundWindow(hWnd);
+            AppendMenu(hMenu, MF_STRING, 4, g_disabled ? _T("Enable") : _T("Disable"));
+            AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
+            AppendMenu(hMenu, MF_STRING, 2, _T("Settings"));
+            AppendMenu(hMenu, MF_STRING, 3, _T("About..."));
+            AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
+            AppendMenu(hMenu, MF_STRING, 1, _T("Exit"));
 
-            UINT cmd = TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD, pt.x, pt.y, 0, hWnd, NULL);
+            SetForegroundWindow(hWnd);
+            SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+
+            UINT cmd = TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_BOTTOMALIGN, pt.x, pt.y, 0, hWnd, NULL);
             switch (cmd) {
-            case 1: // Settings
-                ShellExecute(NULL, _T("open"), settingsFile, NULL, NULL, SW_SHOWNORMAL);
+            case 1: // Exit
+                PostMessage(hWnd, WM_CLOSE, 0, 0);
                 break;
 
-            case 2: // Exit
-                PostMessage(hWnd, WM_CLOSE, 0, 0);
+            case 2: // Settings
+                ShellExecute(NULL, _T("open"), settingsFile, NULL, NULL, SW_SHOWNORMAL);
+                break;
+                   
+            case 3: // About
+                ShellExecute(NULL, _T("open"), _T("https://www.github.com/Fabi019/IntelligentTB"), NULL, NULL, SW_SHOWNORMAL);
+                break;
+                
+            case 4: // Toggle
+                g_disabled = !g_disabled;
                 break;
             }
 
@@ -165,14 +192,29 @@ LRESULT CALLBACK WndProc(
 }
 
 VOID CALLBACK TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
-    g_tbm.UpdateTaskbar();
+    if (g_disabled)
+        return;
+    g_tbm->UpdateTaskbar();
 }
 
 VOID LoadSettings() {
-    TCHAR szValue[MAX_PATH];
-    GetPrivateProfileString(_T("Settings"), _T("Option1"), _T(""), szValue, MAX_PATH, settingsFile);
-    _tprintf(_T("Option1: %s\n"), szValue);
+    TCHAR szValue[512];
 
-    GetPrivateProfileString(_T("Settings"), _T("Option2"), _T(""), szValue, MAX_PATH, settingsFile);
-    _tprintf(_T("Option1: %s\n"), szValue);
+    GetPrivateProfileString(SETTINGS_CATEGORY, _T("TimerMs"), DEFAULT_TIMERMS, szValue, 512, settingsFile);
+    OutputDebugString(szValue);
+    OutputDebugString(_T("\n"));
+    timerMs = _tstoi(szValue);
+    if (timerMs < 0) {
+        timerMs = 0;
+    }
+
+    GetPrivateProfileString(SETTINGS_CATEGORY, _T("Blacklist"), DEFAULT_BLACKLIST, szValue, 512, settingsFile);
+    OutputDebugString(szValue);
+    OutputDebugString(_T("\n"));
+    _tcscpy_s(blacklist, szValue);
+
+    GetPrivateProfileString(SETTINGS_CATEGORY, _T("Whitelist"), DEFAULT_WHITELIST, szValue, 512, settingsFile);
+    OutputDebugString(szValue);
+    OutputDebugString(_T("\n"));
+    _tcscpy_s(whitelist, szValue);
 }
