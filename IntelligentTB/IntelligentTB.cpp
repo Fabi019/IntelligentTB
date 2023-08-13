@@ -49,8 +49,8 @@ int WINAPI WinMain(
         return 0; // Exit the second instance
     }
 
-    GetModuleFileName(NULL, settingsFile, MAX_PATH);
-    _tcscpy_s(_tcsrchr(settingsFile, _T('\\')) + 1, MAX_PATH - _tcslen(settingsFile), FILE_NAME);
+    // Enable efficiency mode
+    EnableEfficiencyMode();
 
     // Load settings
     LoadSettings();
@@ -211,6 +211,10 @@ VOID CALLBACK TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime
 }
 
 VOID LoadSettings() {
+    // Construct settings path
+    GetModuleFileName(NULL, settingsFile, MAX_PATH);
+    _tcscpy_s(_tcsrchr(settingsFile, _T('\\')) + 1, MAX_PATH - _tcslen(settingsFile), FILE_NAME);
+
     TCHAR szValue[512];
 
     GetPrivateProfileString(SETTINGS_CATEGORY, _T("TimerMs"), DEFAULT_TIMERMS, szValue, 512, settingsFile);
@@ -230,4 +234,20 @@ VOID LoadSettings() {
     OutputDebugString(szValue);
     OutputDebugString(_T("\n"));
     _tcscpy_s(whitelist, szValue);
+}
+
+VOID EnableEfficiencyMode() {
+    // Set process priority to idle
+    SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
+
+    // Throttle execution speed (EcoQos)
+    PROCESS_POWER_THROTTLING_STATE pic;
+    pic.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+    pic.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
+    pic.StateMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
+
+    SetProcessInformation(GetCurrentProcess(),
+        ProcessPowerThrottling,
+        &pic,
+        sizeof(PROCESS_POWER_THROTTLING_STATE));
 }

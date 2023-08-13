@@ -19,3 +19,4 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 VOID	CALLBACK	TimerCallback(HWND, UINT, UINT_PTR, DWORD);
 VOID				LoadSettings();
+VOID				EnableEfficiencyMode();
