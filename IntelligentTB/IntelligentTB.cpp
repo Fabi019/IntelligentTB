@@ -149,9 +149,7 @@ LRESULT CALLBACK WndProc(
             AppendMenu(hMenu, MF_STRING, 3, _T("About..."));
             AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
             AppendMenu(hMenu, MF_STRING, 1, _T("Exit"));
-
             SetForegroundWindow(hWnd);
-            SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
             UINT cmd = TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_BOTTOMALIGN, pt.x, pt.y, 0, hWnd, NULL);
             switch (cmd) {

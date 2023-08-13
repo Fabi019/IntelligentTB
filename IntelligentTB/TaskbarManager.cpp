@@ -5,6 +5,30 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 	trayWindow = FindWindow(_T("Shell_TrayWnd"), nullptr);
 	monitor = MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
 
+	if (!trayWindow) {
+		MessageBox(NULL,
+			_T("Handle to taskbar window not found!"),
+			_T("Error"),
+			MB_ICONERROR);
+	}
+
+	// Check if auto-hide is enabled
+	APPBARDATA abd;
+	abd.cbSize = sizeof(APPBARDATA);
+	abd.hWnd = trayWindow;
+	UINT taskbarState = (UINT)SHAppBarMessage(ABM_GETSTATE, &abd);
+	if (!(taskbarState & ABS_AUTOHIDE)) {
+		int result = MessageBox(NULL,
+			_T("The auto-hide taskbar is not enabled.\nThis app will most likely not function without it.\nDo you want to open the taskbar settings?"),
+			_T("Warning"),
+			MB_YESNO | MB_ICONWARNING);
+
+		if (result == IDYES) {
+			// Open taskbar settings
+			ShellExecute(NULL, _T("open"), _T("ms-settings:taskbar"), NULL, NULL, SW_SHOWNORMAL);
+		}
+	}
+
 	TCHAR* token;
 	TCHAR* context;
 
