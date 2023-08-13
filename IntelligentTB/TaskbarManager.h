@@ -12,9 +12,9 @@ public:
 
 private:
     bool ShouldHideTaskbar();
-    void ShowTaskbar(HWND trayWindow, HMONITOR monitor);
-    void HideTaskbar(HWND trayWindow);
-    bool IsTaskbarVisible(HWND trayWindow);
+    void ShowTaskbar();
+    void HideTaskbar();
+    bool IsTaskbarVisible();
 
 private:
     HWND trayWindow = NULL;

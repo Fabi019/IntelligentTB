@@ -29,7 +29,7 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 	}
 
 	// Initially show taskbar
-	ShowTaskbar(trayWindow, monitor);
+	ShowTaskbar();
 
 	// Small delay to wait for the taskbar to fully show
 	Sleep(1);
@@ -43,7 +43,7 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 bool TaskbarManager::ShouldHideTaskbar() {
 	HWND foregroundWnd = GetForegroundWindow();
 
-	if (foregroundWnd == nullptr) {
+	if (!foregroundWnd) {
 		OutputDebugString(_T("No foreground window!\n"));
 		return false;
 	}
@@ -107,29 +107,29 @@ bool TaskbarManager::ShouldHideTaskbar() {
 	return intersect;
 }
 
-void TaskbarManager::ShowTaskbar(HWND trayWindow, HMONITOR monitor) {
+void TaskbarManager::ShowTaskbar() {
 	PostMessage(trayWindow, 0x05D1, (WPARAM)1, (LPARAM)monitor);
 }
 
-void TaskbarManager::HideTaskbar(HWND trayWindow) {
+void TaskbarManager::HideTaskbar() {
 	PostMessage(trayWindow, 0x05D1, (WPARAM)0, (LPARAM)0);
 }
 
 void TaskbarManager::UpdateTaskbar() {
-	bool visible = IsTaskbarVisible(trayWindow);
+	bool visible = IsTaskbarVisible();
 	bool shouldHide = ShouldHideTaskbar();
 
 	if (visible && shouldHide) {
 		OutputDebugString(_T("Hiding taskbar\n"));
-		HideTaskbar(trayWindow);
+		HideTaskbar();
 	}
 	else if (!visible && !shouldHide) {
 		OutputDebugString(_T("Showing taskbar\n"));
-		ShowTaskbar(trayWindow, monitor);
+		ShowTaskbar();
 	}
 }
 
-bool TaskbarManager::IsTaskbarVisible(HWND trayWindow) {
+bool TaskbarManager::IsTaskbarVisible() {
 	RECT rect;
 	if (!GetWindowRect(trayWindow, &rect)) {
 		OutputDebugString(_T("Unable to get task bar window rect!\n"));

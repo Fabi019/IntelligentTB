@@ -1,7 +1,7 @@
 #include "IntelligentTB.h"
 #include "TaskbarManager.h"
 
-const TCHAR SETTINGS_FILE[] = _T("settings.ini");
+const TCHAR FILE_NAME[] = _T("settings.ini");
 const TCHAR SETTINGS_CATEGORY[] = _T("Settings");
 const TCHAR DEFAULT_TIMERMS[] = _T("200");
 const TCHAR DEFAULT_BLACKLIST[] = _T("Progman,XamlExplorerHostIslandWindow,Shell_TrayWnd,TopLevelWindowForOverflowXamlIsland,Windows.UI.Core.CoreWindow,WindowsDashboard,WorkerW");
@@ -50,7 +50,7 @@ int WINAPI WinMain(
     }
 
     GetModuleFileName(NULL, settingsFile, MAX_PATH);
-    _tcscpy_s(_tcsrchr(settingsFile, _T('\\')) + 1, MAX_PATH - _tcslen(settingsFile), SETTINGS_FILE);
+    _tcscpy_s(_tcsrchr(settingsFile, _T('\\')) + 1, MAX_PATH - _tcslen(settingsFile), FILE_NAME);
 
     // Load settings
     LoadSettings();
@@ -159,10 +159,25 @@ LRESULT CALLBACK WndProc(
                 PostMessage(hWnd, WM_CLOSE, 0, 0);
                 break;
 
-            case 2: // Settings
+            case 2: { // Settings
+                DWORD fileAttributes = GetFileAttributes(settingsFile);
+                if ((fileAttributes == INVALID_FILE_ATTRIBUTES)
+                    || (fileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                    int result = MessageBox(NULL,
+                        _T("The settings file does not exist. Do you want to create it?"),
+                        szTitle,
+                        MB_YESNO | MB_ICONQUESTION);
+
+                    if (result == IDYES) {
+                        WritePrivateProfileString(SETTINGS_CATEGORY, _T("TimerMs"), DEFAULT_TIMERMS, settingsFile);
+                        WritePrivateProfileString(SETTINGS_CATEGORY, _T("Blacklist"), DEFAULT_BLACKLIST, settingsFile);
+                        WritePrivateProfileString(SETTINGS_CATEGORY, _T("Whitelist"), DEFAULT_WHITELIST, settingsFile);
+                    }
+                }
+
                 ShellExecute(NULL, _T("open"), settingsFile, NULL, NULL, SW_SHOWNORMAL);
                 break;
-                   
+            }
             case 3: // About
                 ShellExecute(NULL, _T("open"), _T("https://www.github.com/Fabi019/IntelligentTB"), NULL, NULL, SW_SHOWNORMAL);
                 break;
