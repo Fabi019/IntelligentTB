@@ -3,6 +3,8 @@
 
 const TCHAR FILE_NAME[] = _T("settings.ini");
 const TCHAR SETTINGS_CATEGORY[] = _T("Settings");
+const TCHAR DEFAULT_AUTOSTART[] = _T("0");
+const TCHAR DEFAULT_EFFMODE[] = _T("1");
 const TCHAR DEFAULT_TIMERMS[] = _T("200");
 const TCHAR DEFAULT_BLACKLIST[] = _T("Progman,XamlExplorerHostIslandWindow,Shell_TrayWnd,TopLevelWindowForOverflowXamlIsland,Windows.UI.Core.CoreWindow,WindowsDashboard,WorkerW");
 const TCHAR DEFAULT_WHITELIST[] = _T("Shell_TrayWnd,MSTaskSwWClass,TrayNotifyWnd");
@@ -12,9 +14,11 @@ static TCHAR szTitle[] = _T("IntelligentTB");
 static TCHAR settingsFile[MAX_PATH];
 
 // Settings
-static INT timerMs = 200;
+static INT timerMs;
 static TCHAR blacklist[512];
 static TCHAR whitelist[512];
+static BOOL autoStart;
+static BOOL efficiencyMode;
 
 // Global variables
 NOTIFYICONDATA g_nid;
@@ -49,11 +53,14 @@ int WINAPI WinMain(
         return 0; // Exit the second instance
     }
 
+    // Load settings
+    LoadSettings();
+
     // Enable efficiency mode
     EnableEfficiencyMode();
 
-    // Load settings
-    LoadSettings();
+    // Set startup
+    SetStartup(autoStart);
 
     // Initialize variables
     MSG msg;
@@ -97,7 +104,7 @@ int WINAPI WinMain(
     auto tbm = TaskbarManager(blacklist, whitelist);
     g_tbm = &tbm;
 
-    // Set a timer that fires every 200ms
+    // Set a timer
     g_timerID = SetTimer(hWnd, 1, timerMs, TimerCallback);
 
     // Initialize NOTIFYICONDATA structure
@@ -170,6 +177,8 @@ LRESULT CALLBACK WndProc(
                         WritePrivateProfileString(SETTINGS_CATEGORY, _T("TimerMs"), DEFAULT_TIMERMS, settingsFile);
                         WritePrivateProfileString(SETTINGS_CATEGORY, _T("Blacklist"), DEFAULT_BLACKLIST, settingsFile);
                         WritePrivateProfileString(SETTINGS_CATEGORY, _T("Whitelist"), DEFAULT_WHITELIST, settingsFile);
+                        WritePrivateProfileString(SETTINGS_CATEGORY, _T("EfficiencyMode"), DEFAULT_EFFMODE, settingsFile);
+                        WritePrivateProfileString(SETTINGS_CATEGORY, _T("AutoStart"), DEFAULT_AUTOSTART, settingsFile);
                     }
                 }
 
@@ -217,7 +226,13 @@ VOID LoadSettings() {
 
     TCHAR szValue[512];
 
-    GetPrivateProfileString(SETTINGS_CATEGORY, _T("TimerMs"), DEFAULT_TIMERMS, szValue, 512, settingsFile);
+    GetPrivateProfileString(SETTINGS_CATEGORY, _T("EfficiencyMode"), DEFAULT_EFFMODE, szValue, 2, settingsFile);
+    efficiencyMode = !!_tstoi(szValue);
+
+    GetPrivateProfileString(SETTINGS_CATEGORY, _T("AutoStart"), DEFAULT_AUTOSTART, szValue, 2, settingsFile);
+    autoStart = !!_tstoi(szValue);
+
+    GetPrivateProfileString(SETTINGS_CATEGORY, _T("TimerMs"), DEFAULT_TIMERMS, szValue, 8, settingsFile);
     timerMs = _tstoi(szValue);
     if (timerMs < 0) {
         timerMs = 0;
@@ -244,4 +259,20 @@ VOID EnableEfficiencyMode() {
         ProcessPowerThrottling,
         &pic,
         sizeof(PROCESS_POWER_THROTTLING_STATE));
+}
+
+VOID SetStartup(BOOL enable) {
+    HKEY hKey;
+    RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_SET_VALUE, &hKey);
+
+    if (enable) {
+        TCHAR szPath[MAX_PATH];
+        GetModuleFileName(NULL, szPath, MAX_PATH);
+        RegSetValueEx(hKey, szTitle, 0, REG_SZ, (BYTE*)szPath, (DWORD)(_tcslen(szPath) + 1) * sizeof(TCHAR));
+    }
+    else {
+        RegDeleteValue(hKey, szTitle);
+    }
+
+    RegCloseKey(hKey);
 }
