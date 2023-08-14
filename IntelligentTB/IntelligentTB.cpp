@@ -218,21 +218,15 @@ VOID LoadSettings() {
     TCHAR szValue[512];
 
     GetPrivateProfileString(SETTINGS_CATEGORY, _T("TimerMs"), DEFAULT_TIMERMS, szValue, 512, settingsFile);
-    OutputDebugString(szValue);
-    OutputDebugString(_T("\n"));
     timerMs = _tstoi(szValue);
     if (timerMs < 0) {
         timerMs = 0;
     }
 
     GetPrivateProfileString(SETTINGS_CATEGORY, _T("Blacklist"), DEFAULT_BLACKLIST, szValue, 512, settingsFile);
-    OutputDebugString(szValue);
-    OutputDebugString(_T("\n"));
     _tcscpy_s(blacklist, szValue);
 
     GetPrivateProfileString(SETTINGS_CATEGORY, _T("Whitelist"), DEFAULT_WHITELIST, szValue, 512, settingsFile);
-    OutputDebugString(szValue);
-    OutputDebugString(_T("\n"));
     _tcscpy_s(whitelist, szValue);
 }
 

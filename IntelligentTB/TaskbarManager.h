@@ -1,8 +1,18 @@
 #pragma once
 
-#include <Windows.h>
+#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
+#include <shellapi.h>
+
 #include <tchar.h>
 #include <vector>
+
+#ifdef _DEBUG
+#define LOGMESSAGE( str ) OutputDebugString( str );
+#else
+#define LOGMESSAGE( str )
+#endif
 
 class TaskbarManager {
 public:
