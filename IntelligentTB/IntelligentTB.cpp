@@ -57,7 +57,9 @@ int WINAPI WinMain(
     LoadSettings();
 
     // Enable efficiency mode
+    if (efficiencyMode) {
     EnableEfficiencyMode();
+    }
 
     // Set startup
     SetStartup(autoStart);
