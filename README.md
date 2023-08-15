@@ -37,7 +37,7 @@ TimerMs=200
 Blacklist=Progman,XamlExplorerHostIslandWindow,Shell_TrayWnd,TopLevelWindowForOverflowXamlIsland,Windows.UI.Core.CoreWindow,WindowsDashboard,WorkerW
 Whitelist=Shell_TrayWnd,MSTaskSwWClass,TrayNotifyWnd
 EfficiencyMode=1
-AutoStart=1
+AutoStart=0
 ```
 
 With the `TimerMs` setting can the update interval adjusted. This is the
