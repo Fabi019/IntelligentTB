@@ -139,7 +139,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IntelligentTB.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="TaskbarManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="IntelligentTB.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

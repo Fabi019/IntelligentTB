@@ -1,5 +1,6 @@
 #include "IntelligentTB.h"
 #include "TaskbarManager.h"
+#include "resource.h"
 
 const TCHAR FILE_NAME[] = _T("settings.ini");
 const TCHAR SETTINGS_CATEGORY[] = _T("Settings");
@@ -58,7 +59,7 @@ int WINAPI WinMain(
 
     // Enable efficiency mode
     if (efficiencyMode) {
-    EnableEfficiencyMode();
+        EnableEfficiencyMode();
     }
 
     // Set startup
@@ -115,7 +116,7 @@ int WINAPI WinMain(
     g_nid.uID = 1;
     g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     g_nid.uCallbackMessage = WM_USER + 1;
-    g_nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    g_nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON));
     _tcscpy_s(g_nid.szTip, szTitle);
 
     // Add the tray icon
@@ -147,7 +148,7 @@ LRESULT CALLBACK WndProc(
     switch (message) {
     case WM_USER + 1: // Tray icon message
         switch (LOWORD(lParam)) {
-        case WM_RBUTTONUP: // Right-click context menu
+        case WM_RBUTTONUP: {// Right-click context menu
             POINT pt;
             GetCursorPos(&pt);
 
@@ -190,13 +191,17 @@ LRESULT CALLBACK WndProc(
             case 3: // About
                 ShellExecute(NULL, _T("open"), _T("https://www.github.com/Fabi019/IntelligentTB"), NULL, NULL, SW_SHOWNORMAL);
                 break;
-                
+
             case 4: // Toggle
                 g_disabled = !g_disabled;
                 break;
             }
 
             DestroyMenu(hMenu);
+            break;
+        }
+        case WM_LBUTTONUP: // Left-click
+            g_disabled = !g_disabled;
             break;
         }
         break;
