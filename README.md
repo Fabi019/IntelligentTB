@@ -4,8 +4,9 @@ Windows application to improve the automatic hide feature of the windows taskbar
 The taskbar will only be hidden when the current window intersects with it.
 Otherwise the taskbar is shown like normal.
 Inspired by [SmartTaskbar](https://github.com/ChanpleCai/SmartTaskbar). Written
-completely using native Win32 API. The binary itself is only 20 KB in size and uses
-about 1 MB of memory while running.
+completely using native Win32 API. The binary itself is only ~10 KB in size and uses
+about 1 MB of memory while running. It is entirely self contained and doesn't 
+require any CRT installed.
 
 Tested on: Windows 11 23H2 (22631.2048)
 
