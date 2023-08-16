@@ -1,4 +1,7 @@
+#include "stdafx.h"
 #include "TaskbarManager.h"
+
+const TCHAR* delimiter = _T(",");
 
 TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 	// Initialize tray handle and current monitor
@@ -29,27 +32,63 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 		}
 	}
 
-	TCHAR* token;
-	TCHAR* context;
-
-	// Parse the blacklist
-	token = _tcstok_s(bl, _T(","), &context);
-	while (token != NULL) {
-		LOGMESSAGE(token);
-		LOGMESSAGE(_T("\n"));
-
-		blacklist.push_back(token);
-		token = _tcstok_s(NULL, _T(","), &context);
+	// Count the number of elements in blacklist
+	bl_count = 1;
+	for (TCHAR* p = bl; *p != _T('\0'); p++) {
+		if (*p == *delimiter) {
+			bl_count++;
+		}
 	}
 
-	// Parse the whitelist
-	token = _tcstok_s(wl, _T(","), &context);
+	// Allocate memory for the blacklist
+	blacklist = new TCHAR * [bl_count];
+
+	TCHAR* token;
+	TCHAR* context = nullptr;
+
+	// Parse the blacklist
+	token = _tcstok_s(bl, delimiter, &context);
+	int i = 0;
 	while (token != NULL) {
 		LOGMESSAGE(token);
 		LOGMESSAGE(_T("\n"));
 
-		whitelist.push_back(token);
-		token = _tcstok_s(NULL, _T(","), &context);
+		size_t tokenLength = _tcslen(token);
+
+		// Allocate memory for the substring and copy the data
+		blacklist[i] = new TCHAR[tokenLength + 1];
+		_tcscpy_s(blacklist[i++], tokenLength + 1, token);
+
+		token = _tcstok_s(NULL, delimiter, &context);
+	}
+
+	// Count the number of elements in whitelist
+	wl_count = 1;
+	for (TCHAR* p = wl; *p != _T('\0'); p++) {
+		if (*p == *delimiter) {
+			wl_count++;
+		}
+	}
+
+	// Allocate memory for the whitelist
+	whitelist = new TCHAR * [wl_count];
+
+	context = nullptr; // Reset context
+
+	// Parse the whitelist
+	token = _tcstok_s(wl, delimiter, &context);
+	i = 0;
+	while (token != NULL) {
+		LOGMESSAGE(token);
+		LOGMESSAGE(_T("\n"));
+
+		size_t tokenLength = _tcslen(token);
+
+		// Allocate memory for the substring and copy the data
+		whitelist[i] = new TCHAR[tokenLength + 1];
+		_tcscpy_s(whitelist[i++], tokenLength + 1, token);
+
+		token = _tcstok_s(NULL, delimiter, &context);
 	}
 
 	// Initially show taskbar
@@ -90,8 +129,8 @@ bool TaskbarManager::ShouldHideTaskbar() {
 	LOGMESSAGE(title);
 	LOGMESSAGE(_T("\n"));
 
-	for (auto bl : blacklist) {
-		if (_tcscmp(title, bl) == 0) {
+	for (int i = 0; i < bl_count; i++) {
+		if (_tcscmp(title, blacklist[i]) == 0) {
 			LOGMESSAGE(_T("Foreground is desktop!\n"));
 			return false;
 		}
@@ -116,8 +155,8 @@ bool TaskbarManager::ShouldHideTaskbar() {
 	LOGMESSAGE(title);
 	LOGMESSAGE(_T("\n"));
 
-	for (auto wl : whitelist) {
-		if (_tcscmp(title, wl) == 0) {
+	for (int i = 0; i < wl_count - 1; i++) {
+		if (_tcscmp(title, whitelist[i]) == 0) {
 			LOGMESSAGE(_T("Mouse hoverig taskbar!\n"));
 			return false;
 		}

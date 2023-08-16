@@ -1,13 +1,5 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN
-
-#include <windows.h>
-#include <shellapi.h>
-
-#include <tchar.h>
-#include <vector>
-
 #ifdef _DEBUG
 #define LOGMESSAGE( str ) OutputDebugString( str );
 #else
@@ -31,7 +23,9 @@ private:
     HMONITOR monitor = NULL;
     RECT tbRect;
 
-    std::vector<TCHAR*> blacklist;
-    std::vector<TCHAR*> whitelist;
+    int bl_count;
+    int wl_count;
+    TCHAR** blacklist;
+    TCHAR** whitelist;
 };
 

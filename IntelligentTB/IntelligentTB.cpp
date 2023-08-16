@@ -1,6 +1,7 @@
+#include "stdafx.h"
+#include "resource.h"
 #include "IntelligentTB.h"
 #include "TaskbarManager.h"
-#include "resource.h"
 
 const TCHAR FILE_NAME[] = _T("settings.ini");
 const TCHAR SETTINGS_CATEGORY[] = _T("Settings");
@@ -135,6 +136,9 @@ int WINAPI WinMain(
     // Release the mutex before exiting
     ReleaseMutex(g_hMutex);
     CloseHandle(g_hMutex);
+
+    // Clean up tbm reference
+    g_tbm = nullptr;
 
     return static_cast<int>(msg.wParam);
 }
