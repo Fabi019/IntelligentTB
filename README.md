@@ -23,6 +23,8 @@ When right-clicking on the tray icon the following options are present:
 - About: Opens the project Github-Page (this)
 - Exit: Fully closes the application
 
+**Limitations**: Only works with one taskbar (main monitor) and it has to be at the bottom of the screen (for now)
+
 ## Settings
 
 All settings are loaded at the start of the program from a `settings.ini` file.
