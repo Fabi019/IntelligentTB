@@ -155,7 +155,7 @@ bool TaskbarManager::ShouldHideTaskbar() {
 	LOGMESSAGE(title);
 	LOGMESSAGE(_T("\n"));
 
-	for (int i = 0; i < wl_count - 1; i++) {
+	for (int i = 0; i < wl_count; i++) {
 		if (_tcscmp(title, whitelist[i]) == 0) {
 			LOGMESSAGE(_T("Mouse hoverig taskbar!\n"));
 			return false;
