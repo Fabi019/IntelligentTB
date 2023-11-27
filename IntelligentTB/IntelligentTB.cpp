@@ -14,6 +14,7 @@ const TCHAR DEFAULT_WHITELIST[] = _T("Shell_TrayWnd,MSTaskSwWClass,TrayNotifyWnd
 static TCHAR szWindowClass[] = _T("IntelligentTB");
 static TCHAR szTitle[] = _T("IntelligentTB");
 static TCHAR settingsFile[MAX_PATH];
+static UINT s_uTaskbarRestart;
 
 // Settings
 static INT timerMs;
@@ -150,6 +151,9 @@ LRESULT CALLBACK WndProc(
     _In_ LPARAM lParam
 ) {
     switch (message) {
+    case WM_CREATE:
+        s_uTaskbarRestart = RegisterWindowMessage(_T("TaskbarCreated"));
+        break;
     case WM_USER + 1: // Tray icon message
         switch (LOWORD(lParam)) {
         case WM_RBUTTONUP: {// Right-click context menu
@@ -219,6 +223,10 @@ LRESULT CALLBACK WndProc(
         break;
 
     default:
+        if (message == s_uTaskbarRestart) {
+            Shell_NotifyIcon(NIM_ADD, &g_nid);
+            break;
+        }
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
