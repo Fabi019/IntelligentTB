@@ -47,5 +47,5 @@ jobs:
       with:
         name: ${{ matrix.configuration }} build (${{ matrix.platform }})
         path: |
-          ./x64/${{ matrix.platform }}/*
-          ./${{ matrix.platform }}/*
+          ./x64/${{ matrix.configuration }}/*
+          ./${{ matrix.configuration }}/*
