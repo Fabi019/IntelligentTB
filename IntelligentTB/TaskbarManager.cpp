@@ -4,16 +4,7 @@
 const TCHAR* delimiter = _T(",");
 
 TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
-	// Initialize tray handle and current monitor
-	trayWindow = FindWindow(_T("Shell_TrayWnd"), nullptr);
-	monitor = MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
-
-	if (!trayWindow) {
-		MessageBox(NULL,
-			_T("Handle to taskbar window not found!"),
-			_T("Error"),
-			MB_ICONERROR);
-	}
+	RefreshTaskbarHandle();
 
 	// Check if auto-hide is enabled
 	APPBARDATA abd;
@@ -41,7 +32,7 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 	}
 
 	// Allocate memory for the blacklist
-	blacklist = new TCHAR * [bl_count];
+	blacklist = reinterpret_cast<TCHAR**>(malloc(sizeof(TCHAR*) * bl_count));
 
 	TCHAR* token;
 	TCHAR* context = nullptr;
@@ -56,7 +47,7 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 		size_t tokenLength = _tcslen(token);
 
 		// Allocate memory for the substring and copy the data
-		blacklist[i] = new TCHAR[tokenLength + 1];
+		blacklist[i] = reinterpret_cast<TCHAR*>(malloc(sizeof(TCHAR) * tokenLength + 1));
 		_tcscpy_s(blacklist[i++], tokenLength + 1, token);
 
 		token = _tcstok_s(NULL, delimiter, &context);
@@ -71,7 +62,7 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 	}
 
 	// Allocate memory for the whitelist
-	whitelist = new TCHAR * [wl_count];
+	whitelist = reinterpret_cast<TCHAR**>(malloc(sizeof(TCHAR*) * wl_count));
 
 	context = nullptr; // Reset context
 
@@ -85,10 +76,25 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 		size_t tokenLength = _tcslen(token);
 
 		// Allocate memory for the substring and copy the data
-		whitelist[i] = new TCHAR[tokenLength + 1];
+		whitelist[i] = reinterpret_cast<TCHAR*>(malloc(sizeof(TCHAR) * tokenLength + 1));
 		_tcscpy_s(whitelist[i++], tokenLength + 1, token);
 
 		token = _tcstok_s(NULL, delimiter, &context);
+	}
+
+}
+
+void TaskbarManager::RefreshTaskbarHandle() {
+	// Initialize tray handle and current monitor
+	trayWindow = FindWindow(_T("Shell_TrayWnd"), nullptr);
+	monitor = MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+
+	if (!trayWindow) {
+		MessageBox(NULL,
+			_T("Handle to taskbar window not found!"),
+			_T("Error"),
+			MB_ICONERROR);
+		return;
 	}
 
 	// Initially show taskbar
@@ -195,7 +201,7 @@ void TaskbarManager::UpdateTaskbar() {
 bool TaskbarManager::IsTaskbarVisible() {
 	RECT rect;
 	if (!GetWindowRect(trayWindow, &rect)) {
-		LOGMESSAGE(_T("Unable to get task bar window rect!\n"));
+		RefreshTaskbarHandle();
 		return false;
 	}
 

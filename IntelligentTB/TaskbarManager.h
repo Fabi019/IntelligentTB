@@ -17,6 +17,7 @@ private:
     void ShowTaskbar();
     void HideTaskbar();
     bool IsTaskbarVisible();
+    void RefreshTaskbarHandle();
 
 private:
     HWND trayWindow = NULL;
