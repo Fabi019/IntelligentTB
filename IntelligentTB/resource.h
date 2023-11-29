@@ -3,3 +3,4 @@
 // Used by IntelligentTB.rc
 //
 #define IDI_ICON                        101
+#define IDI_ICON_DISABLED               102

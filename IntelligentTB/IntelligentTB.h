@@ -2,6 +2,7 @@
 
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 VOID	CALLBACK	TimerCallback(HWND, UINT, UINT_PTR, DWORD);
+VOID                Toggle();
 VOID				LoadSettings();
 VOID				EnableEfficiencyMode();
 VOID				SetStartup(BOOL);

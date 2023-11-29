@@ -29,6 +29,8 @@ HANDLE g_hMutex = NULL;
 UINT_PTR g_timerID = 0;
 TaskbarManager* g_tbm;
 BOOL g_disabled = false;
+HICON icon = NULL;
+HICON iconDisabled = NULL;
 
 int WINAPI WinMain(
     _In_ HINSTANCE hInstance,
@@ -112,13 +114,17 @@ int WINAPI WinMain(
     // Set a timer
     g_timerID = SetTimer(hWnd, 1, timerMs, TimerCallback);
 
+    // Load icons
+    icon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON));
+    iconDisabled = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON_DISABLED));
+
     // Initialize NOTIFYICONDATA structure
     g_nid.cbSize = sizeof(NOTIFYICONDATA);
     g_nid.hWnd = hWnd;
     g_nid.uID = 1;
     g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     g_nid.uCallbackMessage = WM_USER + 1;
-    g_nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON));
+    g_nid.hIcon = icon;
     _tcscpy_s(g_nid.szTip, szTitle);
 
     // Add the tray icon
@@ -201,7 +207,7 @@ LRESULT CALLBACK WndProc(
                 break;
 
             case 4: // Toggle
-                g_disabled = !g_disabled;
+                Toggle();
                 break;
             }
 
@@ -209,7 +215,7 @@ LRESULT CALLBACK WndProc(
             break;
         }
         case WM_LBUTTONUP: // Left-click
-            g_disabled = !g_disabled;
+            Toggle();
             break;
         }
         break;
@@ -230,6 +236,17 @@ LRESULT CALLBACK WndProc(
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+VOID Toggle() {
+    g_disabled = !g_disabled;
+    if (g_disabled) {
+        g_nid.hIcon = iconDisabled;
+    }
+    else {
+        g_nid.hIcon = icon;
+    }
+    Shell_NotifyIcon(NIM_MODIFY, &g_nid);
 }
 
 VOID CALLBACK TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
