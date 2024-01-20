@@ -47,7 +47,7 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 		size_t tokenLength = _tcslen(token);
 
 		// Allocate memory for the substring and copy the data
-		blacklist[i] = reinterpret_cast<TCHAR*>(malloc(sizeof(TCHAR) * tokenLength + 1));
+		blacklist[i] = new TCHAR[tokenLength + 1];
 		_tcscpy_s(blacklist[i++], tokenLength + 1, token);
 
 		token = _tcstok_s(NULL, delimiter, &context);
@@ -76,7 +76,7 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 		size_t tokenLength = _tcslen(token);
 
 		// Allocate memory for the substring and copy the data
-		whitelist[i] = reinterpret_cast<TCHAR*>(malloc(sizeof(TCHAR) * tokenLength + 1));
+		whitelist[i] = new TCHAR[tokenLength + 1];
 		_tcscpy_s(whitelist[i++], tokenLength + 1, token);
 
 		token = _tcstok_s(NULL, delimiter, &context);
