@@ -181,7 +181,11 @@ void TaskbarManager::ShowTaskbar() {
 }
 
 void TaskbarManager::HideTaskbar() {
+	//PostMessage(trayWindow, 0x0579, (WPARAM)0, (LPARAM)0);
+	//PostMessage(trayWindow, 0x04F3, (WPARAM)0, (LPARAM)0xD508A0);
 	PostMessage(trayWindow, 0x05D1, (WPARAM)0, (LPARAM)0);
+	PostMessage(trayWindow, 0x05BB, (WPARAM)0, (LPARAM)0);
+	//PostMessage(trayWindow, 0x05C5, (WPARAM)0, (LPARAM)0);
 }
 
 void TaskbarManager::UpdateTaskbar() {
