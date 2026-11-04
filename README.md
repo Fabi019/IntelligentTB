@@ -15,6 +15,7 @@ Tested on: Windows 11 23H2 (22631.2048)
 - Low CPU/Memory usage
 - Configurable via settings file
 - Simple interface via tray icon
+- Multi-monitor/taskbar support
 
 When right-clicking on the tray icon the following options are present:
 
@@ -23,7 +24,7 @@ When right-clicking on the tray icon the following options are present:
 - About: Opens the project Github-Page (this)
 - Exit: Fully closes the application
 
-**Limitations**: Only works with one taskbar (main monitor) and it has to be at the bottom of the screen (for now)
+**Limitations**: The taskbar has to be at the bottom of the screen.
 
 ## Settings
 
@@ -37,8 +38,8 @@ should open up. The contents will look like the following:
 ```ini
 [Settings]
 TimerMs=200
-Blacklist=Progman,XamlExplorerHostIslandWindow,Shell_TrayWnd,TopLevelWindowForOverflowXamlIsland,Windows.UI.Core.CoreWindow,WindowsDashboard,WorkerW
-Whitelist=Shell_TrayWnd,MSTaskSwWClass,TrayNotifyWnd
+Blacklist=Progman,XamlExplorerHostIslandWindow,Shell_TrayWnd,Shell_SecondaryTrayWnd,TopLevelWindowForOverflowXamlIsland,Windows.UI.Core.CoreWindow,WindowsDashboard,WorkerW
+Whitelist=Shell_TrayWnd,Shell_SecondaryTrayWnd,MSTaskSwWClass,TrayNotifyWnd
 EfficiencyMode=1
 AutoStart=0
 ```
