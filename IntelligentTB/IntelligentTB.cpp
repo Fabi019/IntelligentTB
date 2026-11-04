@@ -8,8 +8,8 @@ const TCHAR SETTINGS_CATEGORY[] = _T("Settings");
 const TCHAR DEFAULT_AUTOSTART[] = _T("0");
 const TCHAR DEFAULT_EFFMODE[] = _T("1");
 const TCHAR DEFAULT_TIMERMS[] = _T("200");
-const TCHAR DEFAULT_BLACKLIST[] = _T("Progman,XamlExplorerHostIslandWindow,Shell_TrayWnd,TopLevelWindowForOverflowXamlIsland,Windows.UI.Core.CoreWindow,WindowsDashboard,WorkerW");
-const TCHAR DEFAULT_WHITELIST[] = _T("Shell_TrayWnd,MSTaskSwWClass,TrayNotifyWnd");
+const TCHAR DEFAULT_BLACKLIST[] = _T("Progman,XamlExplorerHostIslandWindow,Shell_TrayWnd,Shell_SecondaryTrayWnd,TopLevelWindowForOverflowXamlIsland,Windows.UI.Core.CoreWindow,WindowsDashboard,WorkerW");
+const TCHAR DEFAULT_WHITELIST[] = _T("Shell_TrayWnd,Shell_SecondaryTrayWnd,MSTaskSwWClass,TrayNotifyWnd");
 
 static TCHAR szWindowClass[] = _T("IntelligentTB");
 static TCHAR szTitle[] = _T("IntelligentTB");
@@ -224,12 +224,21 @@ LRESULT CALLBACK WndProc(
         DestroyWindow(hWnd);
         break;
 
+    case WM_DISPLAYCHANGE:
+        if (g_tbm) {
+            g_tbm->RefreshTaskbars();
+        }
+        break;
+
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
 
     default:
         if (message == s_uTaskbarRestart) {
+            if (g_tbm) {
+                g_tbm->RefreshTaskbars();
+            }
             Shell_NotifyIcon(NIM_ADD, &g_nid);
             break;
         }

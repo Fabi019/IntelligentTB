@@ -6,27 +6,33 @@
 #define LOGMESSAGE( str )
 #endif
 
+const int MAX_TASKBARS = 16;
+
+struct TaskbarInfo {
+    HWND hwnd = NULL;
+    HMONITOR monitor = NULL;
+    RECT rect = {};
+};
+
 class TaskbarManager {
 public:
     TaskbarManager(TCHAR*, TCHAR*);
 
     void UpdateTaskbar();
+    void RefreshTaskbars();
 
 private:
-    bool ShouldHideTaskbar();
-    void ShowTaskbar();
-    void HideTaskbar();
-    bool IsTaskbarVisible();
-    void RefreshTaskbarHandle();
+    bool ShouldHideTaskbar(const TaskbarInfo&);
+    void ShowTaskbar(TaskbarInfo&);
+    void HideTaskbar(TaskbarInfo&);
+    bool IsTaskbarVisible(const TaskbarInfo&);
 
 private:
-    HWND trayWindow = NULL;
-    HMONITOR monitor = NULL;
-    RECT tbRect;
+    TaskbarInfo taskbars[MAX_TASKBARS];
+    int taskbarCount = 0;
 
     int bl_count;
     int wl_count;
     TCHAR** blacklist;
     TCHAR** whitelist;
 };
-

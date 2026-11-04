@@ -4,12 +4,19 @@
 const TCHAR* delimiter = _T(",");
 
 TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
-	RefreshTaskbarHandle();
+	RefreshTaskbars();
+
+	if (taskbarCount == 0) {
+		MessageBox(NULL,
+			_T("Handle to taskbar window not found!"),
+			_T("Error"),
+			MB_ICONERROR);
+	}
 
 	// Check if auto-hide is enabled
 	APPBARDATA abd;
 	abd.cbSize = sizeof(APPBARDATA);
-	abd.hWnd = trayWindow;
+	abd.hWnd = taskbarCount > 0 ? taskbars[0].hwnd : NULL;
 	UINT taskbarState = (UINT)SHAppBarMessage(ABM_GETSTATE, &abd);
 	if (!(taskbarState & ABS_AUTOHIDE)) {
 		int result = MessageBox(NULL,
@@ -84,32 +91,78 @@ TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
 
 }
 
-void TaskbarManager::RefreshTaskbarHandle() {
-	// Initialize tray handle and current monitor
-	trayWindow = FindWindow(_T("Shell_TrayWnd"), nullptr);
-	monitor = MonitorFromPoint(POINT{ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+struct EnumTaskbarContext {
+	TaskbarInfo* taskbars;
+	int count;
+};
 
-	if (!trayWindow) {
-		MessageBox(NULL,
-			_T("Handle to taskbar window not found!"),
-			_T("Error"),
-			MB_ICONERROR);
+static BOOL CALLBACK EnumTaskbarProc(HWND hwnd, LPARAM lParam) {
+	TCHAR className[64];
+	if (!GetClassName(hwnd, className, 64)) {
+		return TRUE;
+	}
+
+	if (_tcscmp(className, _T("Shell_TrayWnd")) != 0 &&
+		_tcscmp(className, _T("Shell_SecondaryTrayWnd")) != 0) {
+		return TRUE;
+	}
+
+	EnumTaskbarContext* context = reinterpret_cast<EnumTaskbarContext*>(lParam);
+	if (context->count >= MAX_TASKBARS) {
+		return FALSE;
+	}
+
+	TaskbarInfo& taskbar = context->taskbars[context->count];
+
+	taskbar.hwnd = hwnd;
+	taskbar.monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+	context->count++;
+
+	return TRUE;
+}
+
+void TaskbarManager::RefreshTaskbars() {
+	taskbarCount = 0;
+
+	EnumTaskbarContext context = { taskbars, 0 };
+	EnumWindows(EnumTaskbarProc, reinterpret_cast<LPARAM>(&context));
+	taskbarCount = context.count;
+
+	if (taskbarCount == 0) {
 		return;
 	}
 
-	// Initially show taskbar
-	ShowTaskbar();
+	// Initially show all taskbars
+	for (int i = 0; i < taskbarCount; i++) {
+		ShowTaskbar(taskbars[i]);
+	}
 
 	// Small delay to wait for the taskbar to fully show
 	Sleep(1);
 
-	if (!GetWindowRect(trayWindow, &tbRect)) {
-		LOGMESSAGE(_T("Unable to get task bar window rect!\n"));
-		return;
+	for (int i = 0; i < taskbarCount; i++) {
+		RECT rect;
+		if (!GetWindowRect(taskbars[i].hwnd, &rect)) {
+			LOGMESSAGE(_T("Unable to get task bar window rect!\n"));
+			continue;
+		}
+
+		MONITORINFO monitorInfo = {};
+		monitorInfo.cbSize = sizeof(monitorInfo);
+		if (GetMonitorInfo(taskbars[i].monitor, &monitorInfo)
+			&& rect.bottom > monitorInfo.rcMonitor.bottom) {
+			// The taskbar was still auto-hidden while the rect was read.
+			// Normalize it to the position it occupies while shown.
+			int delta = rect.bottom - monitorInfo.rcMonitor.bottom;
+			rect.top -= delta;
+			rect.bottom -= delta;
+		}
+
+		taskbars[i].rect = rect;
 	}
 }
 
-bool TaskbarManager::ShouldHideTaskbar() {
+bool TaskbarManager::ShouldHideTaskbar(const TaskbarInfo& tb) {
 	HWND foregroundWnd = GetForegroundWindow();
 
 	if (!foregroundWnd) {
@@ -148,67 +201,83 @@ bool TaskbarManager::ShouldHideTaskbar() {
 		return false;
 	}
 
-	HWND cursorWnd = WindowFromPoint(curPos);
+	if (MonitorFromPoint(curPos, MONITOR_DEFAULTTONEAREST) == tb.monitor) {
+		HWND cursorWnd = WindowFromPoint(curPos);
 
-	if (cursorWnd == nullptr) {
-		LOGMESSAGE(_T("No window under cursor window!\n"));
-		return false;
-	}
-
-	GetClassName(cursorWnd, title, 256);
-
-	LOGMESSAGE(_T("Hovering: "));
-	LOGMESSAGE(title);
-	LOGMESSAGE(_T("\n"));
-
-	for (int i = 0; i < wl_count; i++) {
-		if (_tcscmp(title, whitelist[i]) == 0) {
-			LOGMESSAGE(_T("Mouse hoverig taskbar!\n"));
+		if (cursorWnd == nullptr) {
+			LOGMESSAGE(_T("No window under cursor window!\n"));
 			return false;
+		}
+
+		GetClassName(cursorWnd, title, 256);
+
+		LOGMESSAGE(_T("Hovering: "));
+		LOGMESSAGE(title);
+		LOGMESSAGE(_T("\n"));
+
+		for (int i = 0; i < wl_count; i++) {
+			if (_tcscmp(title, whitelist[i]) == 0) {
+				LOGMESSAGE(_T("Mouse hoverig taskbar!\n"));
+				return false;
+			}
 		}
 	}
 
-	bool intersect = fgRect.left < tbRect.right
-		&& fgRect.right > tbRect.left
-		&& fgRect.top < tbRect.bottom
-		&& fgRect.bottom > tbRect.top;
+	bool intersect = fgRect.left < tb.rect.right
+		&& fgRect.right > tb.rect.left
+		&& fgRect.top < tb.rect.bottom
+		&& fgRect.bottom > tb.rect.top;
 
 	return intersect;
 }
 
-void TaskbarManager::ShowTaskbar() {
-	PostMessage(trayWindow, 0x05D1, (WPARAM)1, (LPARAM)monitor);
+void TaskbarManager::ShowTaskbar(TaskbarInfo& tb) {
+	PostMessage(tb.hwnd, 0x05D1, (WPARAM)1, (LPARAM)tb.monitor);
 }
 
-void TaskbarManager::HideTaskbar() {
-	//PostMessage(trayWindow, 0x0579, (WPARAM)0, (LPARAM)0);
-	//PostMessage(trayWindow, 0x04F3, (WPARAM)0, (LPARAM)0xD508A0);
-	PostMessage(trayWindow, 0x05D1, (WPARAM)0, (LPARAM)0);
-	PostMessage(trayWindow, 0x05BB, (WPARAM)0, (LPARAM)0);
-	//PostMessage(trayWindow, 0x05C5, (WPARAM)0, (LPARAM)0);
+void TaskbarManager::HideTaskbar(TaskbarInfo& tb) {
+	//PostMessage(tb.hwnd, 0x0579, (WPARAM)0, (LPARAM)0);
+	//PostMessage(tb.hwnd, 0x04F3, (WPARAM)0, (LPARAM)0xD508A0);
+	PostMessage(tb.hwnd, 0x05D1, (WPARAM)0, (LPARAM)0);
+	PostMessage(tb.hwnd, 0x05BB, (WPARAM)0, (LPARAM)0);
+	//PostMessage(tb.hwnd, 0x05C5, (WPARAM)0, (LPARAM)0);
 }
 
 void TaskbarManager::UpdateTaskbar() {
-	bool visible = IsTaskbarVisible();
-	bool shouldHide = ShouldHideTaskbar();
+	for (int i = 0; i < taskbarCount; i++) {
+		TaskbarInfo& tb = taskbars[i];
 
-	if (visible && shouldHide) {
-		LOGMESSAGE(_T("Hiding taskbar\n"));
-		HideTaskbar();
-	}
-	else if (!visible && !shouldHide) {
-		LOGMESSAGE(_T("Showing taskbar\n"));
-		ShowTaskbar();
+		if (!IsWindow(tb.hwnd)) {
+			RefreshTaskbars();
+			return;
+		}
+
+		bool visible = IsTaskbarVisible(tb);
+		bool shouldHide = ShouldHideTaskbar(tb);
+
+		if (visible && shouldHide) {
+			LOGMESSAGE(_T("Hiding taskbar\n"));
+			HideTaskbar(tb);
+		}
+		else if (!visible && !shouldHide) {
+			LOGMESSAGE(_T("Showing taskbar\n"));
+			ShowTaskbar(tb);
+		}
 	}
 }
 
-bool TaskbarManager::IsTaskbarVisible() {
+bool TaskbarManager::IsTaskbarVisible(const TaskbarInfo& tb) {
 	RECT rect;
-	if (!GetWindowRect(trayWindow, &rect)) {
-		RefreshTaskbarHandle();
+	if (!GetWindowRect(tb.hwnd, &rect)) {
 		return false;
 	}
 
-	int bottomDelta = rect.bottom - GetSystemMetrics(SM_CYSCREEN);
+	MONITORINFO monitorInfo = {};
+	monitorInfo.cbSize = sizeof(monitorInfo);
+	if (!GetMonitorInfo(tb.monitor, &monitorInfo)) {
+		return false;
+	}
+
+	int bottomDelta = rect.bottom - monitorInfo.rcMonitor.bottom;
 	return bottomDelta == 0;
 }
