@@ -1,0 +1,19 @@
+<Project Sdk="WixToolset.Sdk/4.0.1" InitialTargets="_ResolveWixExtensionsFromPackageReference">
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Iis.wixext" Version="4.0.1" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="4.0.1" />
+    <PackageReference Include="WixToolset.NetFx.wixext" Version="4.0.1" />
+  </ItemGroup>
+
+  <Target Name="_ResolveWixExtensionsFromPackageReference"
+          Condition="'@(WixExtension)' == ''">
+    <PropertyGroup>
+      <_WixExtensionPackageRoot Condition="'$(NuGetPackageRoot)' != ''">$(NuGetPackageRoot)</_WixExtensionPackageRoot>
+      <_WixExtensionPackageRoot Condition="'$(_WixExtensionPackageRoot)' == ''">$(UserProfile)\.nuget\packages\</_WixExtensionPackageRoot>
+    </PropertyGroup>
+    <ItemGroup>
+      <WixExtension Include="$(_WixExtensionPackageRoot)%(PackageReference.Identity)\%(PackageReference.Version)\wixext4\%(PackageReference.Identity).dll"
+                    Condition="'%(PackageReference.Identity)' != '' and Exists('$(_WixExtensionPackageRoot)%(PackageReference.Identity)\%(PackageReference.Version)\wixext4\%(PackageReference.Identity).dll')" />
+    </ItemGroup>
+  </Target>
+</Project>

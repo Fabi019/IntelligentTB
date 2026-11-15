@@ -1,0 +1,114 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <?if $(var.Platform) = x64 ?>
+    <?define PlatformProductName = "IntelligentTB (x64)" ?>
+    <?define PlatformUpgradeCode = "3a5953c7-abc4-47a4-83b6-6b94b348ecea" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+    <?define PlatformExePath = "..\x64\Release\IntelligentTB.exe" ?>
+  <?elseif $(var.Platform) = ARM64 ?>
+    <?define PlatformProductName = "IntelligentTB (ARM64)" ?>
+    <?define PlatformUpgradeCode = "883a389a-3801-496e-a35a-f51108591f29" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+    <?define PlatformExePath = "..\x64\Release\IntelligentTB.exe" ?>
+  <?else ?>
+    <?define PlatformProductName = "IntelligentTB (x86)" ?>
+    <?define PlatformUpgradeCode = "62e632ef-ec13-4d28-865b-c615db47b827" ?>
+    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+    <?define PlatformExePath = "..\Release\IntelligentTB.exe" ?>
+  <?endif ?>
+
+  <Package Name="$(PlatformProductName)" Manufacturer="Fabi019" Version="1.0.2" UpgradeCode="$(var.PlatformUpgradeCode)">
+    <MediaTemplate EmbedCab="yes" />
+
+    <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+      Schedule="afterInstallInitialize" />
+
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch IntelligentTB" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="EULA.rtf" />
+
+    <Property Id="ApplicationFolderName" Value="IntelligentTB" />
+    <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+
+    <StandardDirectory Id="$(var.PlatformProgramFilesFolder)">
+      <Directory Id="APPLICATIONFOLDER" Name="IntelligentTB" />
+    </StandardDirectory>
+
+    <Property Id="APPLICATIONFOLDER" Secure="yes">
+      <RegistrySearch Id="FindInstallLocation"
+          Root="HKLM"
+          Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[WIX_UPGRADE_DETECTED]"
+          Name="InstallLocation"
+          Type="raw" />
+    </Property>
+
+    <CustomAction 
+      Id="Overwrite_WixSetDefaultPerMachineFolder" 
+      Property="WixPerMachineFolder" 
+      Value="[$(var.PlatformProgramFilesFolder)][ApplicationFolderName]" 
+      Execute="immediate" />
+    
+    <InstallUISequence>
+      <Custom Action="Overwrite_WixSetDefaultPerMachineFolder" After="WixSetDefaultPerMachineFolder" />
+    </InstallUISequence>
+    
+    <InstallExecuteSequence>
+      <Custom Action="Overwrite_WixSetDefaultPerMachineFolder" After="WixSetDefaultPerMachineFolder" />
+    </InstallExecuteSequence>
+
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[APPLICATIONFOLDER]" After="CostFinalize" />
+    
+    <UI>
+      <ui:WixUI Id="WixUI_Advanced" />
+
+      <UIRef Id="WixUI_ErrorProgressText" />
+
+      <Publish
+        Dialog="ExitDialog"
+        Control="Finish"
+        Event="DoAction"
+        Value="LaunchApplication"
+        Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed"/>
+    </UI>
+
+    <Feature Title="Program" Id="Main" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" Display="expand">
+      <Component Id="InstallerFiles" Directory="APPLICATIONFOLDER" Guid="*">
+        <CreateFolder>
+          <Permission User="Everyone" GenericAll="yes" />
+        </CreateFolder>
+        <File Id="Executable" Source="$(var.PlatformExePath)" KeyPath="yes" />
+        <RemoveFile Id="RemoveSettings" Name="settings.ini" On="uninstall" />
+      </Component>
+
+      <Feature Title="Start menu shortcut" Id="StartMenuShortcutFeature" Level="1">
+        <Component Id="StartMenuShortcut" Directory="ProgramMenuFolder" Guid="*">
+          <Shortcut Id="MyStartmenuShortcut"
+                    Name="IntelligentTB"
+                    Description="Opens the program."
+                    Target="[APPLICATIONFOLDER]IntelligentTB.exe"
+                    WorkingDirectory="APPLICATIONFOLDER"/>
+          <RegistryValue Root="HKCU" Key="Software\IntelligentTB" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Feature>
+
+      <!--<Feature Title="Autostart at boot" Id="StartUpAtStartFeature" Level="1">
+        <Component Id="StartUpAtStart" Directory="StartupFolder" Guid="*">
+          <Shortcut Id="MyStartupShortcut"
+                    Name="IntelligentTB"
+                    Description="Opens the program."
+                    Target="[APPLICATIONFOLDER]IntelligentTB.exe"
+                    WorkingDirectory="APPLICATIONFOLDER"/>
+          <RemoveFile Id="RemoveShortcutStartup" Name="IntelligentTB" On="uninstall"/>
+          <RegistryValue Root="HKCU" Key="Software\IntelligentTB" Type="string" Value="[APPLICATIONFOLDER]IntelligentTB.exe" KeyPath="yes" />
+        </Component>
+      </Feature>-->
+    </Feature>
+
+    <CustomAction Id="LaunchApplication"
+        FileRef="Executable"
+        ExeCommand=""
+        Return="asyncNoWait"
+        Impersonate="yes" />
+  </Package>
+</Wix>
