@@ -3,14 +3,20 @@
 
 const TCHAR* delimiter = _T(",");
 
+const int STARTUP_RETRY_COUNT = 30;
+const int STARTUP_RETRY_DELAY_MS = 100;
+const ULONGLONG RETRY_INTERVAL_MS = 2000;
+
 TaskbarManager::TaskbarManager(TCHAR* bl, TCHAR* wl) {
-	RefreshTaskbars();
+	for (int i = 0; i < STARTUP_RETRY_COUNT && taskbarCount == 0; i++) {
+		if (i > 0) {
+			Sleep(STARTUP_RETRY_DELAY_MS);
+		}
+		RefreshTaskbars();
+	}
 
 	if (taskbarCount == 0) {
-		MessageBox(NULL,
-			_T("Handle to taskbar window not found!"),
-			_T("Error"),
-			MB_ICONERROR);
+		LOGMESSAGE(_T("Taskbar window not found yet, still looking...\n"));
 	}
 
 	// Check if auto-hide is enabled
@@ -96,6 +102,30 @@ struct EnumTaskbarContext {
 	int count;
 };
 
+static void AddTaskbar(EnumTaskbarContext& context, HWND hwnd) {
+	if (context.count >= MAX_TASKBARS) {
+		return;
+	}
+
+	bool known = false;
+	for (int i = 0; i < context.count; i++) {
+		if (context.taskbars[i].hwnd == hwnd) {
+			known = true;
+			break;
+		}
+	}
+
+	if (known) {
+		return;
+	}
+
+	TaskbarInfo& taskbar = context.taskbars[context.count];
+
+	taskbar.hwnd = hwnd;
+	taskbar.monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+	context.count++;
+}
+
 static BOOL CALLBACK EnumTaskbarProc(HWND hwnd, LPARAM lParam) {
 	TCHAR className[64];
 	if (!GetClassName(hwnd, className, 64)) {
@@ -112,24 +142,45 @@ static BOOL CALLBACK EnumTaskbarProc(HWND hwnd, LPARAM lParam) {
 		return FALSE;
 	}
 
-	TaskbarInfo& taskbar = context->taskbars[context->count];
-
-	taskbar.hwnd = hwnd;
-	taskbar.monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-	context->count++;
+	AddTaskbar(*context, hwnd);
 
 	return TRUE;
 }
 
-void TaskbarManager::RefreshTaskbars() {
-	taskbarCount = 0;
-
+static int FindTaskbars(TaskbarInfo* taskbars) {
 	EnumTaskbarContext context = { taskbars, 0 };
-	EnumWindows(EnumTaskbarProc, reinterpret_cast<LPARAM>(&context));
-	taskbarCount = context.count;
+
+	const TCHAR* classes[] = { _T("Shell_TrayWnd"), _T("Shell_SecondaryTrayWnd") };
+	const int classCount = _countof(classes);
+
+	for (int c = 0; c < classCount && context.count < MAX_TASKBARS; c++) {
+		HWND hwnd = NULL;
+		while (context.count < MAX_TASKBARS
+			&& (hwnd = FindWindowEx(NULL, hwnd, classes[c], NULL)) != NULL) {
+			AddTaskbar(context, hwnd);
+		}
+	}
+
+	if (context.count == 0) {
+		EnumWindows(EnumTaskbarProc, reinterpret_cast<LPARAM>(&context));
+	}
+
+	return context.count;
+}
+
+bool TaskbarManager::RefreshTaskbars() {
+	lastRefreshTick = GetTickCount64();
+
+	TaskbarInfo found[MAX_TASKBARS];
+	taskbarCount = FindTaskbars(found);
 
 	if (taskbarCount == 0) {
-		return;
+		LOGMESSAGE(_T("Handle to taskbar window not found!\n"));
+		return false;
+	}
+
+	for (int i = 0; i < taskbarCount; i++) {
+		taskbars[i] = found[i];
 	}
 
 	// Initially show all taskbars
@@ -160,6 +211,8 @@ void TaskbarManager::RefreshTaskbars() {
 
 		taskbars[i].rect = rect;
 	}
+
+	return true;
 }
 
 bool TaskbarManager::ShouldHideTaskbar(const TaskbarInfo& tb) {
@@ -244,11 +297,21 @@ void TaskbarManager::HideTaskbar(TaskbarInfo& tb) {
 }
 
 void TaskbarManager::UpdateTaskbar() {
+	if (taskbarCount == 0) {
+		if (ShouldRetryTaskbarDiscovery()) {
+			RefreshTaskbars();
+		}
+		return;
+	}
+
 	for (int i = 0; i < taskbarCount; i++) {
 		TaskbarInfo& tb = taskbars[i];
 
 		if (!IsWindow(tb.hwnd)) {
-			RefreshTaskbars();
+			taskbarCount = 0;
+			if (ShouldRetryTaskbarDiscovery()) {
+				RefreshTaskbars();
+			}
 			return;
 		}
 
@@ -264,6 +327,10 @@ void TaskbarManager::UpdateTaskbar() {
 			ShowTaskbar(tb);
 		}
 	}
+}
+
+bool TaskbarManager::ShouldRetryTaskbarDiscovery() {
+	return GetTickCount64() - lastRefreshTick >= RETRY_INTERVAL_MS;
 }
 
 bool TaskbarManager::IsTaskbarVisible(const TaskbarInfo& tb) {

@@ -16,7 +16,7 @@
     <?define PlatformExePath = "..\Release\IntelligentTB.exe" ?>
   <?endif ?>
 
-  <Package Name="$(PlatformProductName)" Manufacturer="Fabi019" Version="1.0.2" UpgradeCode="$(var.PlatformUpgradeCode)">
+  <Package Name="$(PlatformProductName)" Manufacturer="Fabi019" Version="1.0.3" UpgradeCode="$(var.PlatformUpgradeCode)">
     <MediaTemplate EmbedCab="yes" />
 
     <MajorUpgrade

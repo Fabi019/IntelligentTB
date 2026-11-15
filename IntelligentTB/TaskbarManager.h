@@ -19,17 +19,19 @@ public:
     TaskbarManager(TCHAR*, TCHAR*);
 
     void UpdateTaskbar();
-    void RefreshTaskbars();
+    bool RefreshTaskbars();
 
 private:
     bool ShouldHideTaskbar(const TaskbarInfo&);
     void ShowTaskbar(TaskbarInfo&);
     void HideTaskbar(TaskbarInfo&);
     bool IsTaskbarVisible(const TaskbarInfo&);
+    bool ShouldRetryTaskbarDiscovery();
 
 private:
     TaskbarInfo taskbars[MAX_TASKBARS];
     int taskbarCount = 0;
+    ULONGLONG lastRefreshTick = 0;
 
     int bl_count;
     int wl_count;
