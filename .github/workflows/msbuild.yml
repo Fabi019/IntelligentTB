@@ -49,3 +49,8 @@ jobs:
         path: |
           ./x64/${{ matrix.configuration }}/*
           ./${{ matrix.configuration }}/*
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Installer (${{ matrix.configuration }} ${{ matrix.platform }})
+        path: ./Installer/bin/${{ matrix.platform }}/${{ matrix.configuration }}/*.msi
