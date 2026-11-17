@@ -3,17 +3,20 @@
     <?define PlatformProductName = "IntelligentTB (x64)" ?>
     <?define PlatformUpgradeCode = "3a5953c7-abc4-47a4-83b6-6b94b348ecea" ?>
     <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-    <?define PlatformExePath = "..\x64\Release\IntelligentTB.exe" ?>
   <?elseif $(var.Platform) = ARM64 ?>
     <?define PlatformProductName = "IntelligentTB (ARM64)" ?>
     <?define PlatformUpgradeCode = "883a389a-3801-496e-a35a-f51108591f29" ?>
     <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
-    <?define PlatformExePath = "..\x64\Release\IntelligentTB.exe" ?>
   <?else ?>
     <?define PlatformProductName = "IntelligentTB (x86)" ?>
     <?define PlatformUpgradeCode = "62e632ef-ec13-4d28-865b-c615db47b827" ?>
     <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
-    <?define PlatformExePath = "..\Release\IntelligentTB.exe" ?>
+  <?endif ?>
+
+  <?if $(var.Platform) = x86 ?>
+    <?define PlatformExePath = "..\$(var.Configuration)\IntelligentTB.exe" ?>
+  <?else ?>
+    <?define PlatformExePath = "..\x64\$(var.Configuration)\IntelligentTB.exe" ?>
   <?endif ?>
 
   <Package Name="$(PlatformProductName)" Manufacturer="Fabi019" Version="1.0.3" UpgradeCode="$(var.PlatformUpgradeCode)">
